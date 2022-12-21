@@ -5,6 +5,23 @@
 SetWorkingDir %A_ScriptDir%
 SetBatchLines -1
 
+full_command_line := DllCall("GetCommandLine", "str")
+if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
+{
+    try
+    {
+        if A_IsCompiled
+            Run *RunAs "%A_ScriptFullPath%" /restart
+        else
+            Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%"
+    }
+    MsgBox, The UAC prompt was cancelled. SakuraArcade installer requires administrator rights to run.
+    ExitApp
+}
+
+InitMenu:
+Gui, Destroy
+inProgress = 0
 Menu Tray, Icon, shell32.dll, 28
 Gui Font, s16 Bold, Segoe UI
 Gui Add, Text, x121 y41 w487 h123 +0x200 +Center, Welcome to the SakuraArcade installer!
@@ -15,9 +32,9 @@ Gui Font
 Gui Add, Button, x315 y227 w100 h45, Install SakuraArcade
 Gui Add, Button, x196 y303 w100 h45 +Disabled, Uninstall SakuraArcade
 Gui Add, Button, x433 y303 w100 h45 +Disabled, Modify installation
-Gui Add, Text, x8 y403 w211 h23 +0x200, Version 1.0 - Developed by hajimedajime86
+Gui Add, Text, x8 y403 w211 h23 +0x200, Version 1.0 - Made with <3 by
 Gui Add, Button, x653 y404 w69 h23, Licence
-
+Gui Add, Link, x152 y408 w74 h16, <a href="https://github.com/bazzadazza72">bazzadazza72</a>
 Gui Show, w730 h432, SakuraArcade Installer 1.0
 Return
 
@@ -25,10 +42,57 @@ ButtonLicence:
 Run, "https://www.gnu.org/licenses/gpl-3.0.en.html"
 Return
 
+ButtonInstallSakuraArcade:
+Gui, Destroy
+inProgress = 1
+Menu Tray, Icon, shell32.dll, 28
+Gui Font, s13, Segoe UI
+Gui Add, Text, x199 y141 w331 h150 +0x200 +Center, Checking system...
+Gui Font
+Gui Show, w730 h432, SakuraArcade Installer 1.0 - Stage 1/1
+Sleep, 1500
+If (A_Is64bitOS = 1)
+{
+    MsgBox, 48, Installation error, SakuraArcade cannot be installed onto this edition of Windows.
+    Goto, InitMenu
+}
+Else
+{
+    Goto, InstallFlow
+}
+Return
 
 
 
 
-GuiEscape:
+InstallFlow:
+GuiControl, Hide, Static9
+Return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 GuiClose:
-    ExitApp
+    If inProgress = 1
+        MsgBox, 36, Are you sure?, You are about to quit the SakuraArcade installer. Any progress you have made will be lost. Are you sure you want to quit?
+        IfMsgBox, Yes
+            ExitApp
+        ifMsgBox, No
+            Return
+    Else
+        ExitApp
